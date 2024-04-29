@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiple Images Upload</title>
+<style>
+  .image-box {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: inline-flex;
+    text-align: center;
+    margin-right: 5px;
+    border: 2px solid #ccc;
+    box-sizing: border-box;
+    }
+
+    .image-box img.placeholder {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    }
+
+    .image-box img.selected {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: grab;
+  }
+
+  .remove-icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background-color: rgba(255, 0, 0, 0.5);
+    border-radius: 50%;
+    display: none;
+    cursor: pointer;
+    z-index: 1;
+    transform: translate(50%, -50%);
+}
+
+    .image-box:hover .remove-icon {
+        display: block;
+    }
+
+    .image-box:not(:has(.selected)) {
+        cursor: pointer;
+    }
+    .image-container {
+        position: relative;
+    }
+
+    .cover-text {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 3px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+
+</style>
+</head>
+<body>
+  <div id="imageBoxes">
+    <!-- Image boxes will be dynamically created here -->
+  </div>
+
+  <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+  <label for="imageInput" style="cursor: pointer;"></label>
+
+  <script>
+    const imageBoxes = document.getElementById('imageBoxes');
+    const imageInput = document.getElementById('imageInput');
+    let draggedItem = null;
+
+    // Create image boxes
+    for (let i = 1; i <= 20; i++) {
+      const box = createImageBox(i);
+      imageBoxes.appendChild(box);
+    }
+
+    function createImageBox(index) {
+      const box = document.createElement('div');
+      box.classList.add('image-box');
+      box.dataset.index = index;
+      box.addEventListener('click', handleBoxClick);
+      box.addEventListener('dragstart', handleDragStart);
+      box.addEventListener('dragover', handleDragOver);
+      box.addEventListener('drop', handleDrop);
+      const placeholderImg = document.createElement('img');
+      placeholderImg.src = "https://www.olx.com.pk/assets/iconAddPhoto_noinline.8924e2486f689a28af51da37a7bda6ec.svg";
+      placeholderImg.alt = "Add Image";
+      placeholderImg.classList.add('placeholder');
+      box.appendChild(placeholderImg);
+      return box;
+    }
+
+    function handleBoxClick() {
+      imageInput.click();
+      imageInput.dataset.currentIndex = this.dataset.index;
+    }
+
+    function handleDragStart(event) {
+      draggedItem = this;
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+    }
+
+
+
+    function handleDrop(event) {
+  event.preventDefault();
+  const draggedItemIndex = parseInt(draggedItem.dataset.index);
+  const thisIndex = parseInt(this.dataset.index);
+  const isFirstBox = draggedItemIndex === 1 || thisIndex === 1;
+
+  if (draggedItem !== this && draggedItem.querySelector('.selected') && this.querySelector('.selected')) {
+    const draggedItemImage = draggedItem.querySelector('.selected');
+    const thisItemImage = this.querySelector('.selected');
+
+    const tempSrc = draggedItemImage.src;
+    draggedItemImage.src = thisItemImage.src;
+    thisItemImage.src = tempSrc;
+
+    if (isFirstBox) {
+      const firstBox = document.querySelector('.image-box[data-index="1"]');
+      const coverText = firstBox.querySelector('.cover-text');
+      if (coverText) {
+        coverText.remove();
+        firstBox.appendChild(coverText);
+      }
+    }
+
+    const addRemoveIcon = (box) => {
+      const removeIcon = document.createElement('div');
+      removeIcon.classList.add('remove-icon');
+      removeIcon.innerHTML = "&#10006;";
+      removeIcon.addEventListener('click', handleRemoveClick);
+      box.appendChild(removeIcon);
+    };
+
+    addRemoveIcon(draggedItem);
+    addRemoveIcon(this);
+  }
+}
+
+
+
+
+function handleRemoveClick(event) {
+  event.stopPropagation();
+  const box = this.parentNode;
+  const index = parseInt(box.dataset.index);
+  const nextBox = document.querySelector(`.image-box[data-index="${index + 1}"]`);
+
+  // Remove the container
+  const container = box.querySelector('.image-container');
+  container.remove();
+
+  // Remove the remove icon
+  const removeIcon = box.querySelector('.remove-icon');
+  if (removeIcon) {
+    removeIcon.remove();
+  }
+
+  // Add placeholder image to the removed box
+  const placeholderImg = document.createElement('img');
+  placeholderImg.src = "https://www.olx.com.pk/assets/iconAddPhoto_noinline.8924e2486f689a28af51da37a7bda6ec.svg";
+  placeholderImg.alt = "Add Image";
+  placeholderImg.classList.add('placeholder');
+  box.innerHTML = '';
+  box.appendChild(placeholderImg);
+
+  // Start re-positioning selected images
+  for (let i = index + 1; i <= 20; i++) {
+    const currentBox = document.querySelector(`.image-box[data-index="${i}"]`);
+    if (!currentBox) break; // No more boxes to check
+
+    const currentContainer = currentBox.querySelector('.image-container');
+    if (currentContainer && currentContainer.querySelector('.selected')) {
+      // Move the container to the previous box
+      const previousBox = document.querySelector(`.image-box[data-index="${i - 1}"]`);
+      previousBox.innerHTML = ''; // Clear the previous box
+      previousBox.appendChild(currentContainer); // Move the container to the previous box
+
+      const newRemoveIcon = document.createElement('div');
+      newRemoveIcon.classList.add('remove-icon');
+      newRemoveIcon.innerHTML = "&#10006;";
+      newRemoveIcon.addEventListener('click', handleRemoveClick);
+      previousBox.appendChild(newRemoveIcon);
+
+
+
+      const placeholderImg = document.createElement('img');
+      placeholderImg.src = "https://www.olx.com.pk/assets/iconAddPhoto_noinline.8924e2486f689a28af51da37a7bda6ec.svg";
+      placeholderImg.alt = "Add Image";
+      placeholderImg.classList.add('placeholder');
+      currentBox.appendChild(placeholderImg);
+
+      // Show remove icon for the onward selected images
+      const removeIcon = currentBox.querySelector('.remove-icon');
+      if (!removeIcon) {
+        const newRemoveIcon = document.createElement('div');
+        newRemoveIcon.classList.add('remove-icon');
+        newRemoveIcon.innerHTML = "&#10006;";
+        newRemoveIcon.addEventListener('click', handleRemoveClick);
+        currentBox.appendChild(newRemoveIcon);
+      }
+    } else {
+      // If the box is empty, add the placeholder image
+      const placeholderImg = document.createElement('img');
+      placeholderImg.src = "https://www.olx.com.pk/assets/iconAddPhoto_noinline.8924e2486f689a28af51da37a7bda6ec.svg";
+      placeholderImg.alt = "Add Image";
+      placeholderImg.classList.add('placeholder');
+      currentBox.innerHTML = '';
+      currentBox.appendChild(placeholderImg);
+    }
+  }
+
+
+  // Add cover text to the first box if the removed image was the first selected image
+  if (index === 1) {
+    const firstBox = document.querySelector(`.image-box[data-index="1"]`);
+    const coverText = document.createElement('div');
+    coverText.classList.add('cover-text');
+    coverText.innerText = "Cover";
+    firstBox.appendChild(coverText);
+  }
+  
+}
+
+
+
+
+
+
+    
+imageInput.addEventListener('change', function() {
+  const files = this.files;
+  let previewIndex = 1;
+
+  if (files.length === 0) return;
+
+  for (let i = 0; i < files.length && previewIndex <= 20; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      let box = document.querySelector(`.image-box[data-index="${previewIndex}"]`);
+      while (box && box.querySelector('.selected')) {
+        previewIndex++;
+        box = document.querySelector(`.image-box[data-index="${previewIndex}"]`);
+      }
+      if (box) {
+        const container = document.createElement('div');
+        container.classList.add('image-container');
+
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.alt = "Image Preview";
+        img.classList.add('selected');
+
+        container.appendChild(img);
+
+        if (previewIndex === 1) {
+          const coverText = document.createElement('div');
+          coverText.classList.add('cover-text');
+          coverText.textContent = "Cover";
+          container.appendChild(coverText);
+        }
+
+        box.innerHTML = '';
+        box.appendChild(container);
+
+        const removeIcon = document.createElement('div');
+        removeIcon.classList.add('remove-icon');
+        removeIcon.innerHTML = "&#10006;";
+        removeIcon.addEventListener('click', handleRemoveClick);
+        box.appendChild(removeIcon);
+      }
+    };
+
+    reader.readAsDataURL(file);
+  }
+});
+
+  </script>
+</body>
+</html>
